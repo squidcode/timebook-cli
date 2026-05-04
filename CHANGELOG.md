@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/squidcode/timebook-cli/compare/v0.1.3...v0.1.4) (2026-05-04)
+
+
+### Bug Fixes
+
+* **login:** default apiUrl to https://usetimebook.com (no api. subdomain exists) ([#4](https://github.com/squidcode/timebook-cli/issues/4)) ([fd5e0c9](https://github.com/squidcode/timebook-cli/commit/fd5e0c9dc4ba6e4afd507a0770536992d62b0778))
+
 ## [0.1.3](https://github.com/squidcode/timebook-cli/compare/v0.1.2...v0.1.3) (2026-05-04)
 
 
