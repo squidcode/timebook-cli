@@ -2,17 +2,17 @@
 
 Command-line client and **MCP server** for [Timebook](https://usetimebook.com) — track time, manage timers, and expose your Timebook account to AI agents (Claude, Codex, Cursor, …) over the [Model Context Protocol](https://modelcontextprotocol.io).
 
-[![npm](https://img.shields.io/npm/v/%40squidcode%2Ftimebook-cli.svg)](https://www.npmjs.com/package/@squidcode/timebook-cli)
-[![license](https://img.shields.io/npm/l/%40squidcode%2Ftimebook-cli.svg)](./LICENSE)
+[![npm](https://img.shields.io/npm/v/%40squidcode%2Ftimebook.svg)](https://www.npmjs.com/package/@squidcode/timebook)
+[![license](https://img.shields.io/npm/l/%40squidcode%2Ftimebook.svg)](./LICENSE)
 
 ## Install
 
 ```bash
 # one-off
-npx @squidcode/timebook-cli login
+npx @squidcode/timebook login
 
 # globally
-npm install -g @squidcode/timebook-cli
+npm install -g @squidcode/timebook
 timebook --help
 ```
 
@@ -65,7 +65,7 @@ The same binary speaks MCP over stdio when invoked with `timebook mcp`. Drop it 
   "mcpServers": {
     "timebook": {
       "command": "npx",
-      "args": ["-y", "@squidcode/timebook-cli", "mcp"]
+      "args": ["-y", "@squidcode/timebook", "mcp"]
     }
   }
 }
