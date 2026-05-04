@@ -111,6 +111,12 @@ timebook login
 
 You can also pass `--api-url` and `--web-url` to `timebook login` once; subsequent commands re-use the saved values.
 
+If `timebook login` errors with `State mismatch` or you want to see exactly which requests reach the loopback callback, run with `--debug`:
+
+```bash
+timebook login --debug
+```
+
 ## Develop
 
 ```bash

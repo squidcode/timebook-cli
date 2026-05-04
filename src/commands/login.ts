@@ -22,6 +22,8 @@ interface LoginOptions {
   port?: number;
   /** Open the browser automatically. Default true. */
   openBrowser?: boolean;
+  /** Log every request that hits the loopback /callback. */
+  debug?: boolean;
 }
 
 const SUCCESS_HTML = `<!doctype html>
@@ -97,18 +99,36 @@ export async function loginCommand(opts: LoginOptions = {}): Promise<void> {
         return;
       }
 
+      if (opts.debug) {
+        console.error(
+          c.dim(
+            `[callback] ${req.method ?? '?'} ${req.url ?? '/'} ` +
+              `ua=${(req.headers['user-agent'] ?? '').slice(0, 60)} ` +
+              `referer=${req.headers.referer ?? '-'}`,
+          ),
+        );
+      }
+
       try {
         const payload = await extractPayload(req, url);
         if (!payload) {
+          // Empty / unrecognised — could be a probe. Reply 400 but keep
+          // listening; the legit callback may still arrive.
+          if (opts.debug) {
+            console.error(c.dim('[callback] ignored: empty/unrecognized payload'));
+          }
           fail(res, 'Empty or unrecognized callback payload');
-          reject(new Error('Empty callback — missing token/secret or state in redirect'));
-          server.close();
           return;
         }
         if (payload.state !== state) {
+          // Stale state — almost always a stray request (prefetch, old tab).
+          // Don't bail the whole login on it; just refuse this one.
+          if (opts.debug) {
+            console.error(
+              c.dim(`[callback] ignored: state mismatch (got ${payload.state ?? '∅'})`),
+            );
+          }
           fail(res, 'Invalid or missing state');
-          reject(new Error('State mismatch — login was cancelled or replayed'));
-          server.close();
           return;
         }
         if (!payload.token || typeof payload.token !== 'string') {

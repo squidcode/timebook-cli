@@ -48,18 +48,28 @@ async function main(): Promise<void> {
     .option('--no-open', 'Do not auto-open the browser; print the URL instead')
     .option('--web-url <url>', 'Override the Timebook web URL')
     .option('--api-url <url>', 'Override the Timebook API URL')
-    .action(async (opts: { port?: number; open: boolean; webUrl?: string; apiUrl?: string }) => {
-      try {
-        await loginCommand({
-          port: opts.port,
-          openBrowser: opts.open,
-          webUrl: opts.webUrl,
-          apiUrl: opts.apiUrl,
-        });
-      } catch (err) {
-        fail(err);
-      }
-    });
+    .option('--debug', 'Print every loopback request hitting /callback (diagnostic)')
+    .action(
+      async (opts: {
+        port?: number;
+        open: boolean;
+        webUrl?: string;
+        apiUrl?: string;
+        debug?: boolean;
+      }) => {
+        try {
+          await loginCommand({
+            port: opts.port,
+            openBrowser: opts.open,
+            webUrl: opts.webUrl,
+            apiUrl: opts.apiUrl,
+            debug: opts.debug,
+          });
+        } catch (err) {
+          fail(err);
+        }
+      },
+    );
 
   program
     .command('logout')
