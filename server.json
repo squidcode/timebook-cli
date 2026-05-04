@@ -1,0 +1,28 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+  "name": "io.github.squidcode/timebook",
+  "description": "Track time, manage timers, and read your Timebook (usetimebook.com) account from any MCP client. Exposes start_timer, stop_timer, log_time, list_projects, list_clients, list_entries, get_active_timer, and whoami.",
+  "version": "0.1.4",
+  "repository": {
+    "url": "https://github.com/squidcode/timebook-cli",
+    "source": "github"
+  },
+  "websiteUrl": "https://usetimebook.com",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@squidcode/timebook",
+      "version": "0.1.4",
+      "transport": {
+        "type": "stdio"
+      },
+      "runtimeArguments": [
+        {
+          "type": "positional",
+          "value": "mcp"
+        }
+      ]
+    }
+  ]
+}
