@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/squidcode/timebook-cli/compare/v0.1.2...v0.1.3) (2026-05-04)
+
+
+### Bug Fixes
+
+* **login:** tolerate stray loopback callbacks instead of bailing ([e5b356d](https://github.com/squidcode/timebook-cli/commit/e5b356d825d28e04129a6db43b228aeb19ad641c))
+
 ## [0.1.2](https://github.com/squidcode/timebook-cli/compare/v0.1.1...v0.1.2) (2026-05-04)
 
 
