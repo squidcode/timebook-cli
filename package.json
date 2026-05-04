@@ -1,6 +1,6 @@
 {
   "name": "@squidcode/timebook",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "mcpName": "io.github.squidcode/timebook",
   "description": "Command-line client and MCP server for Timebook (usetimebook.com) — track time, manage timers, and expose Timebook to AI agents (Claude, Codex, etc.) over MCP.",
   "license": "MIT",

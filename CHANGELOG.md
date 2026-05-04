@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/squidcode/timebook-cli/compare/v0.1.4...v0.2.0) (2026-05-04)
+
+
+### Features
+
+* **mcp:** polish tool definitions for the MCP Registry quality bar ([0fa6bfb](https://github.com/squidcode/timebook-cli/commit/0fa6bfbb22137bff38feff578b8edd2df6e8393a))
+
 ## [0.1.4](https://github.com/squidcode/timebook-cli/compare/v0.1.3...v0.1.4) (2026-05-04)
 
 
