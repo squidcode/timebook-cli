@@ -248,7 +248,7 @@ async function handleTool(name: string, args: unknown): Promise<ToolResult> {
 
 export async function runMcpServer(): Promise<void> {
   const server = new Server(
-    { name: 'timebook', version: '0.1.0' },
+    { name: 'timebook', version: '0.1.1' },
     { capabilities: { tools: {} } },
   );
 
