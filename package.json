@@ -1,6 +1,7 @@
 {
   "name": "@squidcode/timebook",
   "version": "0.1.4",
+  "mcpName": "io.github.squidcode/timebook",
   "description": "Command-line client and MCP server for Timebook (usetimebook.com) — track time, manage timers, and expose Timebook to AI agents (Claude, Codex, etc.) over MCP.",
   "license": "MIT",
   "author": "Squidcode LLC <admin@squidcode.com>",
@@ -45,7 +46,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run lint && npm run typecheck && npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run lint && npm run typecheck && npm run test && npm run build",
     "prepare": "husky"
   },
   "dependencies": {
@@ -68,7 +71,8 @@
     "lint-staged": "^15.2.11",
     "prettier": "^3.4.2",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.5"
   },
   "lint-staged": {
     "*.{ts,js,mjs,cjs}": [

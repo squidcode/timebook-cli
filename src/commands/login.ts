@@ -206,7 +206,7 @@ export async function loginCommand(opts: LoginOptions = {}): Promise<void> {
   if (scopeNote) console.log(c.dim(`  Scope: ${scopeNote}`));
 }
 
-interface CallbackPayload {
+export interface CallbackPayload {
   state?: string;
   token?: string;
   tokenName?: string;
@@ -216,6 +216,22 @@ interface CallbackPayload {
   scopeProjectIds?: string[];
 }
 
+// Exported for unit testing — accepts either `secret=` (current web app) or
+// `token=` (older builds). Returns null when token or state is missing.
+export function parseGetCallback(url: URL): CallbackPayload | null {
+  const params = url.searchParams;
+  const token = params.get('secret') ?? params.get('token');
+  const state = params.get('state');
+  if (!token || !state) return null;
+  return {
+    token,
+    state,
+    tokenName: params.get('tokenName') ?? undefined,
+    tokenPrefix: params.get('tokenPrefix') ?? undefined,
+    tokenId: params.get('tokenId') ?? undefined,
+  };
+}
+
 async function extractPayload(req: IncomingMessage, url: URL): Promise<CallbackPayload | null> {
   if (req.method === 'POST') {
     const body = await readBody(req);
@@ -223,19 +239,7 @@ async function extractPayload(req: IncomingMessage, url: URL): Promise<CallbackP
     return JSON.parse(body) as CallbackPayload;
   }
   if (req.method === 'GET') {
-    // Fallback for GET-style redirects. The web app uses `secret=`; older
-    // builds may use `token=`. Accept either.
-    const params = url.searchParams;
-    const token = params.get('secret') ?? params.get('token');
-    const state = params.get('state');
-    if (!token || !state) return null;
-    return {
-      token,
-      state,
-      tokenName: params.get('tokenName') ?? undefined,
-      tokenPrefix: params.get('tokenPrefix') ?? undefined,
-      tokenId: params.get('tokenId') ?? undefined,
-    };
+    return parseGetCallback(url);
   }
   return null;
 }
@@ -250,7 +254,7 @@ function fail(res: ServerResponse, _reason: string): void {
   res.end(FAILURE_HTML);
 }
 
-function describeScope(
+export function describeScope(
   clients: string[] | undefined,
   projects: string[] | undefined,
 ): string | null {
