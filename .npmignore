@@ -1,0 +1,13 @@
+src
+node_modules
+.husky
+.github
+scripts
+tsconfig.json
+eslint.config.js
+.prettierrc
+.prettierignore
+.editorconfig
+.eslintignore
+*.tsbuildinfo
+.gitignore

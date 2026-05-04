@@ -1,0 +1,85 @@
+{
+  "name": "@squidcode/timebook-cli",
+  "version": "0.1.0",
+  "description": "Command-line client and MCP server for Timebook (usetimebook.com) — track time, manage timers, and expose Timebook to AI agents (Claude, Codex, etc.) over MCP.",
+  "license": "MIT",
+  "author": "Squidcode LLC <admin@squidcode.com>",
+  "homepage": "https://github.com/squidcode/timebook-cli#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/squidcode/timebook-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/squidcode/timebook-cli/issues"
+  },
+  "keywords": [
+    "timebook",
+    "time-tracking",
+    "cli",
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "codex",
+    "freelance",
+    "invoicing"
+  ],
+  "type": "module",
+  "engines": {
+    "node": ">=18.17"
+  },
+  "bin": {
+    "timebook": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/postbuild.mjs",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run lint && npm run typecheck && npm run build",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "commander": "^12.1.0",
+    "env-paths": "^3.0.0",
+    "open": "^10.1.0",
+    "picocolors": "^1.1.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^22.10.2",
+    "@typescript-eslint/eslint-plugin": "^8.18.1",
+    "@typescript-eslint/parser": "^8.18.1",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^9.1.0",
+    "globals": "^15.14.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.11",
+    "prettier": "^3.4.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "lint-staged": {
+    "*.{ts,js,mjs,cjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
