@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/squidcode/timebook-cli/compare/v0.2.0...v0.2.1) (2026-05-04)
+
+
+### Bug Fixes
+
+* **mcp:** declare TIMEBOOK_API_URL/TIMEBOOK_WEB_URL env vars in server.json ([42cf480](https://github.com/squidcode/timebook-cli/commit/42cf480ed8d6778f771ad01ecc9da2685aef41c6))
+
 ## [0.2.0](https://github.com/squidcode/timebook-cli/compare/v0.1.4...v0.2.0) (2026-05-04)
 
 
