@@ -52,3 +52,26 @@ jobs:
       # 22.22.2 (missing 'promise-retry'). Use npx to invoke a known-good
       # npm version just for the publish step.
       - run: npx -y npm@11.5.2 publish --provenance --access public
+
+      # Sync server.json's version to the released tag and republish to the
+      # MCP Registry. Authenticates via GitHub OIDC — same security model as
+      # npm Trusted Publisher; no secret token needed.
+      - name: Sync server.json version to released tag
+        env:
+          TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || needs.release-please.outputs.tag_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          jq --arg v "$VERSION" '.version = $v | .packages[0].version = $v' server.json > server.tmp
+          mv server.tmp server.json
+          echo "server.json now at version $VERSION"
+
+      - name: Install mcp-publisher
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+
+      - name: Authenticate to MCP Registry (GitHub OIDC)
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish to MCP Registry
+        run: ./mcp-publisher publish
