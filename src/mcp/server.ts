@@ -6,11 +6,16 @@ import {
   type CallToolResult,
   type Tool,
 } from '@modelcontextprotocol/sdk/types.js';
+import { createRequire } from 'node:module';
 import { z } from 'zod';
 import { api, ApiError } from '../lib/api.js';
 import { readConfig } from '../lib/config.js';
 import { resolveProject } from '../lib/resolve.js';
 import { parseDuration } from '../lib/format.js';
+
+const pkg = createRequire(import.meta.url)('../../package.json') as { version: string };
+
+const DEFAULT_ENTRY_LIMIT = 50;
 
 // Each tool's input schema is described twice: once as a Zod schema for runtime
 // validation (parse the args before calling the API), once as JSON Schema for
@@ -38,84 +43,150 @@ const listEntriesInput = z.object({
   project: z.string().optional(),
   startDate: z.string().optional().describe('ISO-8601 earliest start time'),
   endDate: z.string().optional().describe('ISO-8601 latest start time'),
-  limit: z.number().int().positive().optional(),
+  limit: z.number().int().min(1).max(500).optional(),
 });
 
 const TOOLS: Tool[] = [
   {
     name: 'whoami',
-    description: 'Return the currently authenticated Timebook user.',
+    description: 'Return the currently authenticated Timebook user (id, email, name).',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
   },
   {
     name: 'list_projects',
-    description: 'List all projects available to the current token.',
+    description:
+      'List all projects available to the current token. Returns id, name, and client for each project.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
   },
   {
     name: 'list_clients',
     description: 'List all clients available to the current token.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
   },
   {
     name: 'get_active_timer',
-    description: 'Return the currently running timer, or null if none.',
+    description:
+      'Return the currently running timer (project, description, started_at), or null if no timer is running.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
   },
   {
     name: 'start_timer',
     description:
-      'Start a timer on a project. Stops any other running timer first (Timebook allows only one active timer).',
+      'Start a timer on a project. Stops any other running timer first — Timebook allows only one active timer at a time.',
     inputSchema: {
       type: 'object',
       properties: {
-        project: { type: 'string', description: 'Project id or exact name' },
-        description: { type: 'string' },
-        rate: { type: 'string', description: 'Rate id or exact name' },
+        project: {
+          type: 'string',
+          description: 'Project id (UUID) or exact project name. Use list_projects to discover.',
+        },
+        description: {
+          type: 'string',
+          description: 'What the user is working on (visible in the time entry).',
+        },
+        rate: {
+          type: 'string',
+          description: 'Optional rate id (UUID) or exact rate name (e.g. "Software Development").',
+        },
       },
       required: ['project'],
       additionalProperties: false,
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
     },
   },
   {
     name: 'stop_timer',
-    description: 'Stop the currently running timer.',
+    description:
+      'Stop the currently running timer. Returns { stopped: false } if no timer was running.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
   },
   {
     name: 'log_time',
     description:
-      'Log a manual time entry. Provide either `duration`, or both `startTime` and `endTime`.',
+      'Log a manual (past) time entry. Provide either `duration` (relative to now), or both `startTime` and `endTime` (absolute ISO-8601 timestamps).',
     inputSchema: {
       type: 'object',
       properties: {
-        project: { type: 'string', description: 'Project id or exact name' },
-        description: { type: 'string' },
+        project: {
+          type: 'string',
+          description: 'Project id (UUID) or exact project name.',
+        },
+        description: {
+          type: 'string',
+          description: 'What the user worked on.',
+        },
         duration: {
           type: 'string',
-          description: 'e.g. "1h", "45m", "1h30m", "1.5h", "1:30", or "90" (minutes)',
+          description:
+            'How long the work took. Accepts "1h", "45m", "1h30m", "1.5h", "1:30", or "90" (interpreted as minutes).',
         },
-        startTime: { type: 'string', description: 'ISO-8601' },
-        endTime: { type: 'string', description: 'ISO-8601' },
-        rate: { type: 'string' },
+        startTime: {
+          type: 'string',
+          description:
+            'ISO-8601 start time (e.g. "2026-05-04T09:00:00Z"). Required if duration is omitted.',
+        },
+        endTime: {
+          type: 'string',
+          description: 'ISO-8601 end time. Required if duration is omitted.',
+        },
+        rate: {
+          type: 'string',
+          description: 'Optional rate id or exact rate name (e.g. "Software Development").',
+        },
       },
       required: ['project'],
       additionalProperties: false,
     },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
   },
   {
     name: 'list_entries',
-    description: 'List recent time entries, optionally filtered by project and date range.',
+    description: `List recent time entries, optionally filtered by project and/or date range. Returns at most ${DEFAULT_ENTRY_LIMIT} entries by default; pass a higher \`limit\` to see more.`,
     inputSchema: {
       type: 'object',
       properties: {
-        project: { type: 'string', description: 'Project id or exact name' },
-        startDate: { type: 'string', description: 'ISO-8601' },
-        endDate: { type: 'string', description: 'ISO-8601' },
-        limit: { type: 'number' },
+        project: {
+          type: 'string',
+          description: 'Optional project id or exact name. Omit to list across all projects.',
+        },
+        startDate: {
+          type: 'string',
+          description: 'ISO-8601 — only entries whose start time is on or after this.',
+        },
+        endDate: {
+          type: 'string',
+          description: 'ISO-8601 — only entries whose start time is on or before this.',
+        },
+        limit: {
+          type: 'integer',
+          description: `Maximum number of entries to return. Defaults to ${DEFAULT_ENTRY_LIMIT}.`,
+          minimum: 1,
+          maximum: 500,
+        },
       },
       additionalProperties: false,
     },
+    annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
   },
 ];
 
@@ -229,8 +300,8 @@ async function handleTool(name: string, args: unknown): Promise<ToolResult> {
           startDate: input.startDate,
           endDate: input.endDate,
         });
-        const limited = input.limit ? entries.slice(0, input.limit) : entries;
-        return ok(limited);
+        const limit = input.limit ?? DEFAULT_ENTRY_LIMIT;
+        return ok(entries.slice(0, limit));
       }
       default:
         return err(`Unknown tool: ${name}`);
@@ -248,7 +319,7 @@ async function handleTool(name: string, args: unknown): Promise<ToolResult> {
 
 export async function runMcpServer(): Promise<void> {
   const server = new Server(
-    { name: 'timebook', version: '0.1.1' },
+    { name: 'timebook', version: pkg.version },
     { capabilities: { tools: {} } },
   );
 
