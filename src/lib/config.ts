@@ -21,8 +21,11 @@ export interface StoredConfig {
   createdAt?: string;
 }
 
+// Production serves both the React app and the JSON API from the same
+// origin (`usetimebook.com/api/*`). There is no `api.usetimebook.com`
+// subdomain, so the API URL defaults to the same host as the web URL.
 const DEFAULT_CONFIG: StoredConfig = {
-  apiUrl: process.env.TIMEBOOK_API_URL ?? 'https://api.usetimebook.com',
+  apiUrl: process.env.TIMEBOOK_API_URL ?? 'https://usetimebook.com',
   webUrl: process.env.TIMEBOOK_WEB_URL ?? 'https://usetimebook.com',
 };
 

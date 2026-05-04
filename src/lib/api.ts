@@ -41,11 +41,28 @@ async function rawRequest<T>(
   if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(url, {
-    method: opts.method ?? 'GET',
-    headers,
-    body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: opts.method ?? 'GET',
+      headers,
+      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+    });
+  } catch (err) {
+    // Node's undici throws a bare `TypeError: fetch failed` and stashes the
+    // real reason (DNS, ECONNREFUSED, cert errors, …) on `cause`. Surface
+    // both so users can tell a misconfigured API URL from a real outage.
+    const cause = (err as { cause?: unknown }).cause;
+    const reason =
+      cause && typeof cause === 'object'
+        ? ((cause as { code?: string }).code ?? (cause as Error).message ?? '')
+        : '';
+    throw new Error(
+      `Network error reaching ${url.origin}${reason ? ` (${reason})` : ''}. ` +
+        `Check TIMEBOOK_API_URL or your connection.`,
+      { cause: err },
+    );
+  }
 
   const text = await res.text();
   let data: unknown = undefined;
