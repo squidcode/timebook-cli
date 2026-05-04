@@ -21,6 +21,22 @@
           "type": "positional",
           "value": "mcp"
         }
+      ],
+      "environmentVariables": [
+        {
+          "name": "TIMEBOOK_API_URL",
+          "description": "Override the Timebook API base URL. Defaults to https://usetimebook.com.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        },
+        {
+          "name": "TIMEBOOK_WEB_URL",
+          "description": "Override the Timebook web URL used during `timebook login`. Defaults to https://usetimebook.com.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        }
       ]
     }
   ]
