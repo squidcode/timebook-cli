@@ -99,7 +99,13 @@ export async function loginCommand(opts: LoginOptions = {}): Promise<void> {
 
       try {
         const payload = await extractPayload(req, url);
-        if (!payload || payload.state !== state) {
+        if (!payload) {
+          fail(res, 'Empty or unrecognized callback payload');
+          reject(new Error('Empty callback — missing token/secret or state in redirect'));
+          server.close();
+          return;
+        }
+        if (payload.state !== state) {
           fail(res, 'Invalid or missing state');
           reject(new Error('State mismatch — login was cancelled or replayed'));
           server.close();
@@ -197,9 +203,10 @@ async function extractPayload(req: IncomingMessage, url: URL): Promise<CallbackP
     return JSON.parse(body) as CallbackPayload;
   }
   if (req.method === 'GET') {
-    // Fallback for GET-style redirects (e.g. ?token=...&state=...).
+    // Fallback for GET-style redirects. The web app uses `secret=`; older
+    // builds may use `token=`. Accept either.
     const params = url.searchParams;
-    const token = params.get('token');
+    const token = params.get('secret') ?? params.get('token');
     const state = params.get('state');
     if (!token || !state) return null;
     return {
