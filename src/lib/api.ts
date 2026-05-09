@@ -157,6 +157,25 @@ export const api = {
       invoiced?: boolean;
     } = {},
   ) => request<{ entries: TimeEntry[] }>('/api/time-entries', { query }),
+  updateEntry: (
+    id: string,
+    input: Partial<{
+      projectId: string;
+      description: string | null;
+      startTime: string;
+      endTime: string;
+      duration: number;
+      rateId: string | null;
+    }>,
+  ) =>
+    request<{ entry: TimeEntry }>(`/api/time-entries/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: input,
+    }),
+  deleteEntry: (id: string) =>
+    request<{ message: string }>(`/api/time-entries/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    }),
 };
 
 // For login flow: validate a freshly-obtained token before storing it.

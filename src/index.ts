@@ -13,6 +13,8 @@ import { startCommand } from './commands/start.js';
 import { stopCommand } from './commands/stop.js';
 import { logCommand } from './commands/log.js';
 import { listClientsCommand, listEntriesCommand, listProjectsCommand } from './commands/list.js';
+import { editCommand } from './commands/edit.js';
+import { deleteCommand } from './commands/delete.js';
 import { runMcpServer } from './mcp/server.js';
 
 async function readVersion(): Promise<string> {
@@ -196,6 +198,48 @@ async function main(): Promise<void> {
         }
       },
     );
+
+  entries
+    .command('edit <id>')
+    .description(
+      'Edit one or more fields on an entry. Any combination is valid; unset fields are left as-is.',
+    )
+    .option('-d, --description <text>', 'Description / note (pass empty string to clear)')
+    .option('-t, --duration <e.g. 1h30m>', 'Duration')
+    .option('--start <iso>', 'Start time (ISO-8601)')
+    .option('--end <iso>', 'End time (ISO-8601)')
+    .option('-p, --project <idOrName>', 'Reassign to another project')
+    .option('-r, --rate <idOrName>', 'Switch billable rate')
+    .action(
+      async (
+        id: string,
+        opts: {
+          description?: string;
+          duration?: string;
+          start?: string;
+          end?: string;
+          project?: string;
+          rate?: string;
+        },
+      ) => {
+        try {
+          await editCommand(id, opts);
+        } catch (err) {
+          fail(err);
+        }
+      },
+    );
+
+  entries
+    .command('delete <id>')
+    .description('Delete a time entry. Token must own it (or use the web UI / admin).')
+    .action(async (id: string) => {
+      try {
+        await deleteCommand(id);
+      } catch (err) {
+        fail(err);
+      }
+    });
 
   program
     .command('mcp')

@@ -46,6 +46,29 @@ const listEntriesInput = z.object({
   limit: z.number().int().min(1).max(500).optional(),
 });
 
+const updateEntryInput = z.object({
+  id: z.string().describe('Entry id (uuid) returned by list_entries.'),
+  description: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('Set the entry note. Pass an empty string or null to clear.'),
+  duration: z
+    .string()
+    .optional()
+    .describe(
+      'New duration, e.g. "1h30m" or "45m". If set without start/end, only duration moves.',
+    ),
+  startTime: z.string().optional().describe('New start time (ISO-8601).'),
+  endTime: z.string().optional().describe('New end time (ISO-8601).'),
+  project: z.string().optional().describe('Reassign the entry to another project (id or name).'),
+  rate: z.string().optional().describe('Switch billable rate (id or name).'),
+});
+
+const deleteEntryInput = z.object({
+  id: z.string().describe('Entry id (uuid) to delete.'),
+});
+
 const TOOLS: Tool[] = [
   {
     name: 'whoami',
@@ -188,6 +211,56 @@ const TOOLS: Tool[] = [
     },
     annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
   },
+  {
+    name: 'update_entry',
+    description:
+      'Edit one or more fields on an existing time entry. Any combination is valid; unset fields are left as-is. Server-enforced authorship rule: this token can only edit entries it created itself (sessions and admins bypass).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Entry id (uuid).' },
+        description: {
+          type: ['string', 'null'],
+          description: 'New description / note. Pass empty string or null to clear.',
+        },
+        duration: {
+          type: 'string',
+          description: 'New duration, e.g. "1h30m" or "45m".',
+        },
+        startTime: { type: 'string', description: 'ISO-8601 start time.' },
+        endTime: { type: 'string', description: 'ISO-8601 end time.' },
+        project: { type: 'string', description: 'Reassign — project id or name.' },
+        rate: { type: 'string', description: 'New rate — id or name.' },
+      },
+      required: ['id'],
+      additionalProperties: false,
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+  },
+  {
+    name: 'delete_entry',
+    description:
+      'Delete a time entry. Server enforces: not invoiced, and either this token created it or the caller is an admin / web session.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Entry id (uuid).' },
+      },
+      required: ['id'],
+      additionalProperties: false,
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+  },
 ];
 
 type ToolResult = CallToolResult;
@@ -302,6 +375,36 @@ async function handleTool(name: string, args: unknown): Promise<ToolResult> {
         });
         const limit = input.limit ?? DEFAULT_ENTRY_LIMIT;
         return ok(entries.slice(0, limit));
+      }
+      case 'update_entry': {
+        const input = updateEntryInput.parse(args ?? {});
+        const payload: Record<string, unknown> = {};
+        if (input.description !== undefined) payload.description = input.description;
+        if (input.duration) payload.duration = parseDuration(input.duration);
+        if (input.startTime) payload.startTime = new Date(input.startTime).toISOString();
+        if (input.endTime) payload.endTime = new Date(input.endTime).toISOString();
+        if (input.project) {
+          const project = await resolveProject(input.project);
+          payload.projectId = project.id;
+        }
+        if (input.rate) {
+          const { rates } = await api.listRates();
+          const found = rates.find((r) => r.id === input.rate || r.name === input.rate);
+          if (!found) return err(`Rate not found: ${input.rate}`);
+          payload.rateId = found.id;
+        }
+        if (Object.keys(payload).length === 0) {
+          return err(
+            'Nothing to update. Pass at least one of description, duration, startTime, endTime, project, rate.',
+          );
+        }
+        const result = await api.updateEntry(input.id, payload);
+        return ok(result);
+      }
+      case 'delete_entry': {
+        const input = deleteEntryInput.parse(args ?? {});
+        const result = await api.deleteEntry(input.id);
+        return ok(result);
       }
       default:
         return err(`Unknown tool: ${name}`);
