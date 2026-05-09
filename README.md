@@ -52,9 +52,17 @@ timebook log -p "Acme website" -t 1h30m -d "Code review"
 timebook log -p PROJ_ID --start 2026-05-04T09:00 --end 2026-05-04T10:30
 
 timebook entries --project "Acme website" -n 10
+
+# edit / delete (any combination of fields; unset ones stay as-is)
+timebook entries edit ENTRY_ID -t 2h -d "code review + tests"
+timebook entries edit ENTRY_ID --start 2026-05-04T09:00 --end 2026-05-04T11:00
+timebook entries edit ENTRY_ID -d ""                    # clear description
+timebook entries delete ENTRY_ID
 ```
 
 Duration formats accepted: `1h`, `45m`, `1h30m`, `1.5h`, `1:30`, or a bare number (interpreted as minutes — e.g. `90` → 1h 30m).
+
+**Edit / delete authorization:** an API token can only modify entries it created itself. JWT sessions (the web UI) and admin tokens bypass this rule. Invoiced entries are locked for everyone via the API. A 403 with a friendly message is returned on a denied attempt — fix the entry from the web UI or with the token that created it.
 
 ## Use it as an MCP server
 
@@ -90,16 +98,18 @@ The MCP server reuses the token saved by `timebook login` — run `timebook logi
 
 ### Tools exposed to the model
 
-| Tool               | What it does                                                 |
-| ------------------ | ------------------------------------------------------------ |
-| `whoami`           | Current authenticated user (read-only)                       |
-| `list_projects`    | All projects in scope (read-only)                            |
-| `list_clients`     | All clients in scope (read-only)                             |
-| `get_active_timer` | The running timer, or `null` (read-only)                     |
-| `start_timer`      | Start a timer on a project                                   |
-| `stop_timer`       | Stop the running timer                                       |
-| `log_time`         | Log a manual entry (`duration` OR `startTime`+`endTime`)     |
-| `list_entries`     | Recent entries (default 50, max 500), project + date filters |
+| Tool               | What it does                                                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| `whoami`           | Current authenticated user (read-only)                                                                                    |
+| `list_projects`    | All projects in scope (read-only)                                                                                         |
+| `list_clients`     | All clients in scope (read-only)                                                                                          |
+| `get_active_timer` | The running timer, or `null` (read-only)                                                                                  |
+| `start_timer`      | Start a timer on a project                                                                                                |
+| `stop_timer`       | Stop the running timer                                                                                                    |
+| `log_time`         | Log a manual entry (`duration` OR `startTime`+`endTime`)                                                                  |
+| `list_entries`     | Recent entries (default 50, max 500), project + date filters                                                              |
+| `update_entry`     | Edit one or more fields on an entry (description, duration, startTime, endTime, project, rate). Token must own the entry. |
+| `delete_entry`     | Delete an entry. Token must own it. Invoiced entries are locked.                                                          |
 
 ### Try it with prompts
 
@@ -110,6 +120,8 @@ Once the MCP server is connected, ask the model in plain English:
 - _"Log 1 hour 30 minutes against ChatNexus from 9am this morning at the Software Development rate, with description 'code review of the auth refactor'."_
 - _"What am I currently working on?"_ — invokes `get_active_timer`.
 - _"Stop my timer."_
+- _"My last entry on Recycler should be 2 hours, not 1h45m. Fix it."_ — invokes `list_entries` then `update_entry`.
+- _"Delete the entry I just made by mistake."_ — invokes `delete_entry`. Will 403 if the entry was created by a different token (web UI, another agent) — say so to the model so it doesn't keep retrying.
 
 The model picks the right tool, asks `list_projects` first if it needs to disambiguate a name, and writes through `start_timer` / `log_time` / `stop_timer`.
 
