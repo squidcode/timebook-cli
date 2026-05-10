@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/squidcode/timebook-cli/compare/v0.4.0...v0.5.0) (2026-05-10)
+
+
+### Features
+
+* **mcp:** advertise the hosted /mcp endpoint via server.json `remotes` ([5370243](https://github.com/squidcode/timebook-cli/commit/53702436008213f73ca048c4ef0e3782116e48ef))
+
 ## [0.4.0](https://github.com/squidcode/timebook-cli/compare/v0.3.0...v0.4.0) (2026-05-10)
 
 
