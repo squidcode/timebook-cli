@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/squidcode/timebook-cli/compare/v0.3.0...v0.4.0) (2026-05-10)
+
+
+### Features
+
+* **mcp:** add display title + favicon to server.json so directories show a real listing ([844539e](https://github.com/squidcode/timebook-cli/commit/844539eab67b986a7bcd6cd1ef27efa1f11e73d8))
+
 ## [0.3.0](https://github.com/squidcode/timebook-cli/compare/v0.2.1...v0.3.0) (2026-05-09)
 
 
