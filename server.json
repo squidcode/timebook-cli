@@ -1,6 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.squidcode/timebook",
+  "title": "Timebook",
   "description": "Track time on usetimebook.com - start/stop timers, log entries, list projects/clients.",
   "version": "0.2.0",
   "repository": {
@@ -8,6 +9,13 @@
     "source": "github"
   },
   "websiteUrl": "https://usetimebook.com",
+  "icons": [
+    {
+      "src": "https://usetimebook.com/favicon.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": ["any"]
+    }
+  ],
   "packages": [
     {
       "registryType": "npm",
