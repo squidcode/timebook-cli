@@ -96,6 +96,17 @@ Or, if installed globally:
 
 The MCP server reuses the token saved by `timebook login` — run `timebook login` once in a terminal before starting the agent.
 
+### Use it as a remote MCP (Claude.ai web)
+
+Timebook also runs as a hosted Streamable-HTTP MCP server at **`https://usetimebook.com/mcp`** with full OAuth 2.0 (Dynamic Client Registration + PKCE + refresh-token rotation). No CLI install required — Claude.ai discovers it via the standard well-known endpoints:
+
+- Auth-server metadata: `https://usetimebook.com/.well-known/oauth-authorization-server`
+- Resource metadata: `https://usetimebook.com/.well-known/oauth-protected-resource/mcp`
+
+Connect from Claude.ai → Settings → Connectors → Add → paste `https://usetimebook.com/mcp`. You'll be redirected to Timebook's consent page once, then Claude can use all the same tools listed below. Same OAuth-style permissions you'd see for any first-class connector.
+
+The HTTP endpoint also accepts `Authorization: Bearer tbk_*` (your existing API token) for any client that prefers token-paste over OAuth — including server-to-server use.
+
 ### Tools exposed to the model
 
 | Tool               | What it does                                                                                                              |

@@ -16,6 +16,12 @@
       "sizes": ["any"]
     }
   ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://usetimebook.com/mcp"
+    }
+  ],
   "packages": [
     {
       "registryType": "npm",
