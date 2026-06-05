@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/squidcode/timebook-cli/compare/v0.5.0...v0.6.0) (2026-06-05)
+
+
+### Features
+
+* **mcp:** cold-start hints + create_client/create_project tools ([1dc8bac](https://github.com/squidcode/timebook-cli/commit/1dc8bac0e956b336dab2eeeca29528245111c350))
+
 ## [0.5.0](https://github.com/squidcode/timebook-cli/compare/v0.4.0...v0.5.0) (2026-05-10)
 
 
