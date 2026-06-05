@@ -10,7 +10,7 @@ import { createRequire } from 'node:module';
 import { z } from 'zod';
 import { api, ApiError } from '../lib/api.js';
 import { readConfig } from '../lib/config.js';
-import { resolveProject } from '../lib/resolve.js';
+import { resolveClient, resolveProject } from '../lib/resolve.js';
 import { parseDuration } from '../lib/format.js';
 
 const pkg = createRequire(import.meta.url)('../../package.json') as { version: string };
@@ -63,6 +63,17 @@ const updateEntryInput = z.object({
   endTime: z.string().optional().describe('New end time (ISO-8601).'),
   project: z.string().optional().describe('Reassign the entry to another project (id or name).'),
   rate: z.string().optional().describe('Switch billable rate (id or name).'),
+});
+
+const createClientInput = z.object({
+  name: z.string().min(1, '`name` is required'),
+  email: z.string().optional(),
+});
+
+const createProjectInput = z.object({
+  name: z.string().min(1, '`name` is required'),
+  client: z.string().min(1, '`client` is required (id or exact name)'),
+  description: z.string().optional(),
 });
 
 const deleteEntryInput = z.object({
@@ -261,6 +272,49 @@ const TOOLS: Tool[] = [
       openWorldHint: true,
     },
   },
+  // Cold-start tools: mirror of the hosted MCP server (backend
+  // src/mcp/tools.ts) so agent-first setup works over stdio too.
+  {
+    name: 'create_client',
+    description:
+      'Create a client (the person/company you bill). Needed before any project or time entry can exist. Typical first step on a fresh account.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: "Client name, e.g. 'Acme Corp'." },
+        email: { type: 'string', description: 'Optional billing/contact email.' },
+      },
+      required: ['name'],
+      additionalProperties: false,
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+  },
+  {
+    name: 'create_project',
+    description:
+      'Create a project under a client. Time entries are always tracked against a project. Typical second step on a fresh account, after create_client.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: "Project name, e.g. 'Website redesign'." },
+        client: { type: 'string', description: 'Client - id or exact name.' },
+        description: { type: 'string', description: 'Optional project description.' },
+      },
+      required: ['name', 'client'],
+      additionalProperties: false,
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+  },
 ];
 
 type ToolResult = CallToolResult;
@@ -274,6 +328,36 @@ const err = (message: string): ToolResult => ({
   isError: true,
 });
 
+// Like ok(), plus a guidance line the agent can act on (mirrors the hosted
+// MCP server's cold-start behavior — keep the wording in sync with
+// backend/src/mcp/tools.ts in the timebook repo).
+const okWithHint = (data: unknown, hint: string): ToolResult => ({
+  content: [
+    { type: 'text', text: JSON.stringify(data, null, 2) },
+    { type: 'text', text: hint },
+  ],
+});
+
+export const COLD_START_HINTS = {
+  noClients:
+    'This account has no clients yet. Create one with create_client (just a name is enough), then add a project with create_project — after that you can start timers and log time.',
+  noProjects:
+    'There are clients but no projects yet. Create one with create_project (name + client), then you can start timers and log time against it.',
+  noEntries:
+    'No time entries yet. Start a timer with start_timer or log past work with log_time (both need a project).',
+} as const;
+
+async function coldStartHintFor(emptyWhat: 'projects' | 'entries'): Promise<string> {
+  try {
+    const [{ clients }, { projects }] = await Promise.all([api.listClients(), api.listProjects()]);
+    if (clients.length === 0) return COLD_START_HINTS.noClients;
+    if (projects.length === 0) return COLD_START_HINTS.noProjects;
+  } catch {
+    // Counting failed — fall through to the generic hint for the surface.
+  }
+  return emptyWhat === 'entries' ? COLD_START_HINTS.noEntries : COLD_START_HINTS.noProjects;
+}
+
 async function ensureLoggedIn(): Promise<void> {
   const config = await readConfig();
   if (!config.token) {
@@ -283,7 +367,7 @@ async function ensureLoggedIn(): Promise<void> {
   }
 }
 
-async function handleTool(name: string, args: unknown): Promise<ToolResult> {
+export async function handleTool(name: string, args: unknown): Promise<ToolResult> {
   try {
     await ensureLoggedIn();
 
@@ -294,10 +378,12 @@ async function handleTool(name: string, args: unknown): Promise<ToolResult> {
       }
       case 'list_projects': {
         const { projects } = await api.listProjects();
+        if (projects.length === 0) return okWithHint(projects, await coldStartHintFor('projects'));
         return ok(projects);
       }
       case 'list_clients': {
         const { clients } = await api.listClients();
+        if (clients.length === 0) return okWithHint(clients, COLD_START_HINTS.noClients);
         return ok(clients);
       }
       case 'get_active_timer': {
@@ -374,6 +460,7 @@ async function handleTool(name: string, args: unknown): Promise<ToolResult> {
           endDate: input.endDate,
         });
         const limit = input.limit ?? DEFAULT_ENTRY_LIMIT;
+        if (entries.length === 0) return okWithHint(entries, await coldStartHintFor('entries'));
         return ok(entries.slice(0, limit));
       }
       case 'update_entry': {
@@ -406,6 +493,30 @@ async function handleTool(name: string, args: unknown): Promise<ToolResult> {
         const result = await api.deleteEntry(input.id);
         return ok(result);
       }
+      case 'create_client': {
+        const input = createClientInput.parse(args ?? {});
+        const { client } = await api.createClient({
+          name: input.name,
+          ...(input.email ? { email: input.email } : {}),
+        });
+        return okWithHint(
+          client,
+          'Client created. Next: create_project (name + this client), then start_timer or log_time.',
+        );
+      }
+      case 'create_project': {
+        const input = createProjectInput.parse(args ?? {});
+        const client = await resolveClient(input.client);
+        const { project } = await api.createProject({
+          name: input.name,
+          clientId: client.id,
+          ...(input.description ? { description: input.description } : {}),
+        });
+        return okWithHint(
+          project,
+          'Project created. You can now start_timer or log_time against it.',
+        );
+      }
       default:
         return err(`Unknown tool: ${name}`);
     }
@@ -416,7 +527,23 @@ async function handleTool(name: string, args: unknown): Promise<ToolResult> {
     if (e instanceof ApiError) {
       return err(`API error (${e.status}): ${e.message}`);
     }
-    return err(e instanceof Error ? e.message : String(e));
+    const message = e instanceof Error ? e.message : String(e);
+    // Cold-start enrichment: "not found" on a fresh account usually means
+    // nothing exists yet — tell the agent how to fix that instead of
+    // leaving it to guess.
+    if (/^Project not found:/.test(message) || /^Client not found:/.test(message)) {
+      try {
+        const { clients } = await api.listClients();
+        if (clients.length === 0) return err(`${message}. ${COLD_START_HINTS.noClients}`);
+        if (/^Project not found:/.test(message)) {
+          const { projects } = await api.listProjects();
+          if (projects.length === 0) return err(`${message}. ${COLD_START_HINTS.noProjects}`);
+        }
+      } catch {
+        // fall through to the plain error
+      }
+    }
+    return err(message);
   }
 }
 

@@ -130,6 +130,10 @@ export interface TimeEntry {
 export const api = {
   me: () => request<{ user: User }>('/api/auth/me'),
   listClients: () => request<{ clients: Client[] }>('/api/clients'),
+  createClient: (input: { name: string; email?: string }) =>
+    request<{ client: Client }>('/api/clients', { method: 'POST', body: input }),
+  createProject: (input: { name: string; clientId: string; description?: string }) =>
+    request<{ project: Project }>('/api/projects', { method: 'POST', body: input }),
   listProjects: () => request<{ projects: Project[] }>('/api/projects'),
   listRates: () => request<{ rates: Rate[] }>('/api/rates'),
   activeTimer: () => request<{ entry: TimeEntry | null }>('/api/time-entries/active'),
