@@ -6,6 +6,7 @@ Command-line client and **MCP server** for [Timebook](https://usetimebook.com) â
 
 [![npm](https://img.shields.io/npm/v/%40squidcode%2Ftimebook.svg)](https://www.npmjs.com/package/@squidcode/timebook)
 [![license](https://img.shields.io/npm/l/%40squidcode%2Ftimebook.svg)](./LICENSE)
+[![timebook-cli MCP server](https://glama.ai/mcp/servers/squidcode/timebook-cli/badges/score.svg)](https://glama.ai/mcp/servers/squidcode/timebook-cli)
 
 ## Install
 
